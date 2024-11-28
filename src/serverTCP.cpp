@@ -3,10 +3,13 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <fstream>
 #include <functional>
 #include <iostream>
+#include <iterator>
 #include <ostream>
 #include <string>
+#include <strstream>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
@@ -30,7 +33,7 @@ int main() {
     sockaddr_in serverAddress;
 
     serverAddress.sin_family = AF_INET;
-    serverAddress.sin_port = htons(3010);
+    serverAddress.sin_port = htons(3011);
     serverAddress.sin_addr.s_addr = INADDR_ANY;
     
 
@@ -61,11 +64,28 @@ int main() {
         std::size_t where = takeFromHead(request, fmeth+1);
         std::string path = request.substr(fmeth+1, where - fmeth - 1);
 
-        std::cout << path << std::endl;
+        std::cout << buffer << std::endl;
 
          if (method == "GET"){
-            std::string sendBack = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n";
-            send(client, sendBack.c_str(), sendBack.length(), 0);
+
+            if(path[path.length()-1] == '/'){
+                path += "index.html";
+            }
+
+            std::string filePath = "." + path;
+
+            std::ifstream file(filePath, std::ios::binary);
+
+            if(file) {
+
+                std::string sendBack = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n";
+                sendBack += std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+                send(client, sendBack.c_str(), sendBack.length(), 0);
+
+            }else{
+                std::string sendBack = "HTTP/1.1 404 Not Found\r\nContent-Type: text/html\r\n\r\n<html><body><h1>Error page not found</h1></body></html>";
+                send(client, sendBack.c_str(), sendBack.length(), 0);
+            }
         } else {
             std::string sendBack = "HTTP/1.1 501 Not Implemented\r\nContent-Type: text/html\r\n\r\n<html><body><h1>501 Not Implemented</h1></body></html>";
             send(client, sendBack.c_str(), sendBack.length(), 0);
