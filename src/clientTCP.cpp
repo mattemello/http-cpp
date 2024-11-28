@@ -18,7 +18,6 @@ int main() {
 
     const char* hello = "hello";
     send(clientSock, hello, strlen(hello), 0);
-    std::cout << hello << std::endl;
 
     close(clientSock);
 
